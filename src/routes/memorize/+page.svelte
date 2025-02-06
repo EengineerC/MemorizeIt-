@@ -4,14 +4,18 @@
 	import { inputText } from '../state.svelte';
 
 	let numberToHide = $state(0);
+	let hiddenIndices: number[] = $state([]);
 	let show = $state(false);
 	let showFirstLetterOnly = $state(false);
+	let guessText = $state('');
 
 	let text = inputText.text;
 	const words = text.split(' ');
-	let hiddenIndices: number[] = $state([]);
 
 	const numberOfWords = words.length;
+
+	$inspect('guess', guessText);
+	$inspect('words', words);
 
 	function updateHiddenWords() {
 		while (hiddenIndices.length < numberToHide && hiddenIndices.length < numberOfWords) {
@@ -20,21 +24,35 @@
 				hiddenIndices = [...hiddenIndices, randomIndex];
 			}
 		}
-		while (hiddenIndices.length > numberToHide ) {
+		while (hiddenIndices.length > numberToHide) {
 			hiddenIndices = hiddenIndices.slice(0, numberToHide);
 		}
 	}
 
+	// I know this function is a little hard to read but it fits the goal perfectly
 	function getDisplayWord(word: string, index: number) {
-		if (!hiddenIndices.includes(index)) {
-			return word;
-		}
+		let guessedWord = guessText.split(' ')[index] || '';
+		return [...word]
+			.map((letter, i) => {
+				let guessedLetter = guessedWord[i] || '';
+				if (guessedLetter.toLowerCase() === letter.toLowerCase()) {
+					return `<b>${letter}</b>`; //bolds if guess letter matches the verse
+				} else if (guessedLetter) {
+					return `<span style='color: red; '>${guessedLetter}</span>`; //makes red if guess letter doesnt match verse
+				} else if (!hiddenIndices.includes(index) || (i === 0 && showFirstLetterOnly))
+					return letter; 
+				else { //blanks if non of those are true
+					return `<span style='color: transparent; text-decoration: underline; text-decoration-color: #5a5a5a;'>${letter}</span>`;
+				}
+			}
+		).join('');
+	}
 
-		if (showFirstLetterOnly) {
-			return word[0] + '_'.repeat(word.length - 1);
-		}
+	//to keep people from accidently typing at the beginning randomly
+	function moveCursorToEnd(event: Event) {
+		const input = event.target as HTMLInputElement;
 
-		return '_'.repeat(word.length);
+		input.selectionStart = input.selectionEnd = input.value.length;
 	}
 </script>
 
@@ -46,9 +64,12 @@
 			<p>{words.join(' ')}</p>
 		{:else}
 			<p>
-				{words.map((word, index) => getDisplayWord(word, index)).join(' ')}
+				{@html words.map((word, index) => getDisplayWord(word, index)).join(' ')}
 			</p>
 		{/if}
+		<div class="input-container">
+			<input bind:value={guessText} spellcheck="false" oninput={moveCursorToEnd}/>
+		</div>
 		<div class="slider-container">
 			<input
 				type="range"
@@ -62,13 +83,15 @@
 			<label for="hide-slider">Hide {numberToHide} words</label>
 		</div>
 	</div>
+
 	<div class="button-container">
 		<button onclick={() => goto('/')}>Back</button>
-		<button onclick={() => (show = !show)}>{show ? 'Blank hidden words' : 'Show hidden words'}</button>
+		<button onclick={() => (show = !show)}
+			>{show ? 'Blank hidden words' : 'Show hidden words'}</button
+		>
 		<button onclick={() => (showFirstLetterOnly = !showFirstLetterOnly)}>
 			{showFirstLetterOnly ? 'Hide all letters' : 'Show first letters'}
 		</button>
-
 	</div>
 </div>
 
@@ -80,12 +103,34 @@
 	}
 
 	.verse-container {
-		max-width: 800px;
+		position: relative;
+		max-width: 90%;
 		margin: 2rem auto;
 		padding: 2rem;
 		background: white;
 		border-radius: 10px;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	}
+
+	.input-container {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 9;
+	}
+
+	.input-container input {
+		width: 99.99%;
+		height: 99.99%;
+		background: transparent;
+		border: none;
+		outline-color: #2c5282;
+		text-align: top;
+		font-size: 1.4rem;
+		color: transparent;
+		border-radius: 10px;
 	}
 
 	.button-container {
@@ -103,7 +148,9 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		color: #606060
+		color: #5a5a5a;
+		position: relative;
+		z-index: 10;
 	}
 
 	.slider {

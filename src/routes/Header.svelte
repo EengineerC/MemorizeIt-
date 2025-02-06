@@ -6,9 +6,7 @@
 	<div class="container">
 		<h1 onclick={() => goto('/')}>MemorVerse</h1>
 		<nav>
-			<!-- <a href="/about">About</a> -->
 			<!-- <a href="/memorize">Memorize</a> -->
-			<!-- <a href="/contact">Contact</a> -->
 		</nav>
 	</div>
 </header>
