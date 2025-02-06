@@ -1,6 +1,3 @@
-Got it! Here's an updated README for your **MemorizeIt** app using SvelteKit:
-
----
 
 # MemorizeIt
 
@@ -69,5 +66,4 @@ If you encounter any issues or errors while using the app, feel free to open an 
 
 None
 
----
 
