@@ -6,9 +6,10 @@
 	$inspect(inputText.text);
 </script>
 
+<Header />
 <main>
 	<div class="background">
-		<Header />
+	
 		<div class="input-container">
 			<textarea bind:value={inputText.text} placeholder="Enter your Bible verse here..." rows="6"
 			></textarea>
@@ -18,6 +19,10 @@
 </main>
 
 <style>
+	main {
+		padding-top: 4rem;
+	}
+
 	.background {
 		min-height: 100vh;
 		background: linear-gradient(to bottom right, #f8f9ff, #e6f0ff);

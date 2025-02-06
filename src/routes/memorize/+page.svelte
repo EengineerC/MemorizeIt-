@@ -4,42 +4,55 @@
 	import { inputText } from '../state.svelte';
 
 	let numberToHide = $state(0);
+	let hiddenIndices: number[] = $state([]);
 	let show = $state(false);
 	let showFirstLetterOnly = $state(false);
+	let guessText = $state('');
 
 	let text = inputText.text;
 	const words = text.split(' ');
-	let hiddenIndices: number[] = $state([]);
 
 	const numberOfWords = words.length;
 
-	function blankMoreWords() {
-		numberToHide++;
+	$inspect('guess', guessText);
+	$inspect('words', words);
+
+	function updateHiddenWords() {
 		while (hiddenIndices.length < numberToHide && hiddenIndices.length < numberOfWords) {
 			let randomIndex = Math.floor(Math.random() * numberOfWords);
 			if (!hiddenIndices.includes(randomIndex)) {
 				hiddenIndices = [...hiddenIndices, randomIndex];
 			}
 		}
-	}
-
-	function blankFewerWords() {
-		if (numberToHide > 0) {
-			numberToHide--;
+		while (hiddenIndices.length > numberToHide) {
 			hiddenIndices = hiddenIndices.slice(0, numberToHide);
 		}
 	}
 
+	// I know this function is a little hard to read but it fits the goal perfectly
 	function getDisplayWord(word: string, index: number) {
-		if (!hiddenIndices.includes(index)) {
-			return word;
-		}
+		let guessedWord = guessText.split(' ')[index] || '';
+		return [...word]
+			.map((letter, i) => {
+				let guessedLetter = guessedWord[i] || '';
+				if (guessedLetter.toLowerCase() === letter.toLowerCase()) {
+					return `<b>${letter}</b>`; //bolds if guess letter matches the verse
+				} else if (guessedLetter) {
+					return `<span style='color: red; '>${guessedLetter}</span>`; //makes red if guess letter doesnt match verse
+				} else if (!hiddenIndices.includes(index) || (i === 0 && showFirstLetterOnly))
+					return letter; 
+				else { //blanks if non of those are true
+					return `<span style='color: transparent; text-decoration: underline; text-decoration-color: #5a5a5a;'>${letter}</span>`;
+				}
+			}
+		).join('');
+	}
 
-		if (showFirstLetterOnly) {
-			return word[0] + '_'.repeat(word.length - 1);
-		}
+	//to keep people from accidently typing at the beginning randomly
+	function moveCursorToEnd(event: Event) {
+		const input = event.target as HTMLInputElement;
 
-		return '_'.repeat(word.length);
+		input.selectionStart = input.selectionEnd = input.value.length;
 	}
 </script>
 
@@ -49,55 +62,75 @@
 	<div class="verse-container">
 		{#if show}
 			<p>{words.join(' ')}</p>
-			<div class="button-container">
-				<button class="show-button" onclick={() => (show = false)}>Hide words</button>
-			</div>
 		{:else}
 			<p>
-				{words.map((word, index) => getDisplayWord(word, index)).join(' ')}
+				{@html words.map((word, index) => getDisplayWord(word, index)).join(' ')}
 			</p>
-			<div class="button-container">
-				<button onclick={() => (show = true)}>Show hidden words</button>
-				<button onclick={() => (showFirstLetterOnly = !showFirstLetterOnly)}>
-					{showFirstLetterOnly ? 'Hide all letters' : 'Show first letters'}
-				</button>
-			</div>
 		{/if}
+		<div class="input-container">
+			<input bind:value={guessText} spellcheck="false" oninput={moveCursorToEnd}/>
+		</div>
+		<div class="slider-container">
+			<input
+				type="range"
+				id="hide-slider"
+				min="0"
+				max={numberOfWords}
+				bind:value={numberToHide}
+				oninput={updateHiddenWords}
+				class="slider"
+			/>
+			<label for="hide-slider">Hide {numberToHide} words</label>
+		</div>
 	</div>
 
 	<div class="button-container">
 		<button onclick={() => goto('/')}>Back</button>
-		<button onclick={blankMoreWords} disabled={numberToHide===numberOfWords}>Hide more words</button>
-		<button onclick={blankFewerWords} disabled={numberToHide === 0}>Hide fewer words</button>
+		<button onclick={() => (show = !show)}
+			>{show ? 'Blank hidden words' : 'Show hidden words'}</button
+		>
+		<button onclick={() => (showFirstLetterOnly = !showFirstLetterOnly)}>
+			{showFirstLetterOnly ? 'Hide all letters' : 'Show first letters'}
+		</button>
 	</div>
 </div>
 
-<!-- 
-Hide/unhide words - done
-show first letter - done
-Todo: cut buttons down?
- -->
-
-<!-- Voice input idea
- find good speach to text api figure out data output
- build type input first scripture typer style so i have the match system and ui working
- connect the two
- -->
-
 <style>
 	.memory-page {
+		padding-top: 7rem;
 		min-height: 100vh;
 		background: linear-gradient(to bottom right, #f8f9ff, #e6f0ff);
-		padding: 2rem;
 	}
 
 	.verse-container {
-		max-width: 800px;
+		position: relative;
+		max-width: 90%;
 		margin: 2rem auto;
 		padding: 2rem;
 		background: white;
 		border-radius: 10px;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	}
+
+	.input-container {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 9;
+	}
+
+	.input-container input {
+		width: 99.99%;
+		height: 99.99%;
+		background: transparent;
+		border: none;
+		outline-color: #2c5282;
+		text-align: top;
+		font-size: 1.4rem;
+		color: transparent;
+		border-radius: 10px;
 	}
 
 	.button-container {
@@ -107,6 +140,23 @@ Todo: cut buttons down?
 		flex-wrap: wrap;
 		justify-content: center;
 		gap: 1rem;
+	}
+
+	.slider-container {
+		max-width: 800px;
+		margin: 2rem auto;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		color: #5a5a5a;
+		position: relative;
+		z-index: 10;
+	}
+
+	.slider {
+		width: 80%;
+		margin: 1rem 0;
+		accent-color: #2c5282;
 	}
 
 	p {
@@ -119,7 +169,7 @@ Todo: cut buttons down?
 			sans-serif;
 		white-space: pre-wrap;
 		word-spacing: 0.5rem;
-		color: #2d3748;
+		color: #606060;
 	}
 
 	button {
