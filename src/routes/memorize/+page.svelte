@@ -13,19 +13,14 @@
 
 	const numberOfWords = words.length;
 
-	function blankMoreWords() {
-		numberToHide++;
+	function updateHiddenWords() {
 		while (hiddenIndices.length < numberToHide && hiddenIndices.length < numberOfWords) {
 			let randomIndex = Math.floor(Math.random() * numberOfWords);
 			if (!hiddenIndices.includes(randomIndex)) {
 				hiddenIndices = [...hiddenIndices, randomIndex];
 			}
 		}
-	}
-
-	function blankFewerWords() {
-		if (numberToHide > 0) {
-			numberToHide--;
+		while (hiddenIndices.length > numberToHide ) {
 			hiddenIndices = hiddenIndices.slice(0, numberToHide);
 		}
 	}
@@ -49,46 +44,39 @@
 	<div class="verse-container">
 		{#if show}
 			<p>{words.join(' ')}</p>
-			<div class="button-container">
-				<button class="show-button" onclick={() => (show = false)}>Hide words</button>
-			</div>
 		{:else}
 			<p>
 				{words.map((word, index) => getDisplayWord(word, index)).join(' ')}
 			</p>
-			<div class="button-container">
-				<button onclick={() => (show = true)}>Show hidden words</button>
-				<button onclick={() => (showFirstLetterOnly = !showFirstLetterOnly)}>
-					{showFirstLetterOnly ? 'Hide all letters' : 'Show first letters'}
-				</button>
-			</div>
 		{/if}
+		<div class="slider-container">
+			<input
+				type="range"
+				id="hide-slider"
+				min="0"
+				max={numberOfWords}
+				bind:value={numberToHide}
+				oninput={updateHiddenWords}
+				class="slider"
+			/>
+			<label for="hide-slider">Hide {numberToHide} words</label>
+		</div>
 	</div>
-
 	<div class="button-container">
 		<button onclick={() => goto('/')}>Back</button>
-		<button onclick={blankMoreWords} disabled={numberToHide===numberOfWords}>Hide more words</button>
-		<button onclick={blankFewerWords} disabled={numberToHide === 0}>Hide fewer words</button>
+		<button onclick={() => (show = !show)}>{show ? 'Blank hidden words' : 'Show hidden words'}</button>
+		<button onclick={() => (showFirstLetterOnly = !showFirstLetterOnly)}>
+			{showFirstLetterOnly ? 'Hide all letters' : 'Show first letters'}
+		</button>
+
 	</div>
 </div>
 
-<!-- 
-Hide/unhide words - done
-show first letter - done
-Todo: cut buttons down?
- -->
-
-<!-- Voice input idea
- find good speach to text api figure out data output
- build type input first scripture typer style so i have the match system and ui working
- connect the two
- -->
-
 <style>
 	.memory-page {
+		padding-top: 7rem;
 		min-height: 100vh;
 		background: linear-gradient(to bottom right, #f8f9ff, #e6f0ff);
-		padding: 2rem;
 	}
 
 	.verse-container {
@@ -109,6 +97,21 @@ Todo: cut buttons down?
 		gap: 1rem;
 	}
 
+	.slider-container {
+		max-width: 800px;
+		margin: 2rem auto;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		color: #606060
+	}
+
+	.slider {
+		width: 80%;
+		margin: 1rem 0;
+		accent-color: #2c5282;
+	}
+
 	p {
 		font-size: 1.4rem;
 		line-height: 1.8;
@@ -119,7 +122,7 @@ Todo: cut buttons down?
 			sans-serif;
 		white-space: pre-wrap;
 		word-spacing: 0.5rem;
-		color: #2d3748;
+		color: #606060;
 	}
 
 	button {
